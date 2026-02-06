@@ -1,3 +1,10 @@
+mod commands;
+mod config;
+mod db;
+
+use crate::db::DbState;
+use tauri::Manager;
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -8,7 +15,21 @@ fn greet(name: &str) -> String {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .manage(DbState::default())
+        .setup(|app| {
+            let handle = app.handle();
+            let state: tauri::State<'_, DbState> = app.state();
+            if let Err(err) = commands::try_autoload(&handle, state.inner()) {
+                eprintln!("FTJournal autoload failed: {err:?}");
+            }
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            commands::app_get_status,
+            commands::db_init,
+            commands::db_unlock
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -1,27 +1,111 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import {
+  Alert,
   AppBar,
   Box,
   Button,
   Container,
   Divider,
+  FormControlLabel,
   Stack,
+  Switch,
   TextField,
   Toolbar,
   Typography,
 } from '@mui/material';
 
+type DbStatus = {
+  configured: boolean;
+  encrypted: boolean;
+  unlocked: boolean;
+};
+
+type AppStatus = {
+  db: DbStatus;
+};
+
+async function getStatus(): Promise<AppStatus> {
+  return invoke<AppStatus>('app_get_status');
+}
+
 export default function App() {
-  const [name, setName] = useState('');
-  const [greetMsg, setGreetMsg] = useState<string>('');
+  const [status, setStatus] = useState<AppStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>('');
 
-  const canGreet = useMemo(() => name.trim().length > 0, [name]);
+  // init form
+  const [initEncrypted, setInitEncrypted] = useState(true);
+  const [initPass, setInitPass] = useState('');
+  const [initPass2, setInitPass2] = useState('');
 
-  async function greet() {
-    // Placeholder wiring test (remove once we have real commands)
-    const msg = await invoke<string>('greet', { name });
-    setGreetMsg(msg);
+  // unlock form
+  const [unlockPass, setUnlockPass] = useState('');
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        setStatus(await getStatus());
+      } catch (e) {
+        setError(String(e));
+      }
+    })();
+  }, []);
+
+  const needsInit = status ? !status.db.configured : false;
+  const needsUnlock = status ? status.db.configured && status.db.encrypted && !status.db.unlocked : false;
+
+  const initCanSubmit = useMemo(() => {
+    if (busy) return false;
+    if (!initEncrypted) return true;
+    const p1 = initPass.trim();
+    const p2 = initPass2.trim();
+    return p1.length >= 8 && p1 === p2;
+  }, [busy, initEncrypted, initPass, initPass2]);
+
+  const unlockCanSubmit = useMemo(() => {
+    if (busy) return false;
+    return unlockPass.trim().length > 0;
+  }, [busy, unlockPass]);
+
+  async function refresh() {
+    setStatus(await getStatus());
+  }
+
+  async function initDb() {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await invoke<AppStatus>('db_init', {
+        req: {
+          encrypted: initEncrypted,
+          passphrase: initEncrypted ? initPass : null,
+        },
+      });
+      setStatus(res);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unlockDb() {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await invoke<AppStatus>('db_unlock', {
+        req: {
+          passphrase: unlockPass,
+        },
+      });
+      setStatus(res);
+      setUnlockPass('');
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -43,36 +127,103 @@ export default function App() {
       <Container sx={{ py: 4 }} maxWidth="md">
         <Stack spacing={2}>
           <Typography variant="h4" sx={{ fontWeight: 800 }}>
-            Futures Trading Journal (Desktop)
+            Setup
           </Typography>
           <Typography color="text.secondary">
             Local-first. No sign-in. Optional encrypted database.
           </Typography>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ pt: 2 }}>
-            <TextField
-              label="Test Rust command"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              fullWidth
-              placeholder="Enter a name…"
-            />
-            <Button variant="contained" onClick={greet} disabled={!canGreet}>
-              Greet
-            </Button>
-          </Stack>
+          {error ? <Alert severity="error">{error}</Alert> : null}
 
-          {greetMsg ? (
-            <Typography sx={{ pt: 1 }}>
-              {greetMsg}
-            </Typography>
+          {status ? (
+            <Alert severity="info">
+              DB status — configured: {String(status.db.configured)}, encrypted: {String(status.db.encrypted)}, unlocked:{' '}
+              {String(status.db.unlocked)}
+            </Alert>
+          ) : (
+            <Alert severity="info">Loading status…</Alert>
+          )}
+
+          {needsInit ? (
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, mt: 2 }}>
+                Create local database
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Choose Secure mode (encrypted) if you want the database file protected at rest.
+              </Typography>
+
+              <FormControlLabel
+                control={<Switch checked={initEncrypted} onChange={(_, v) => setInitEncrypted(v)} />}
+                label={initEncrypted ? 'Secure mode (encrypted) — recommended' : 'Standard mode (unencrypted)'}
+              />
+
+              {initEncrypted ? (
+                <Stack spacing={2} sx={{ mt: 2 }}>
+                  <TextField
+                    label="Passphrase"
+                    type="password"
+                    value={initPass}
+                    onChange={(e) => setInitPass(e.target.value)}
+                    helperText="Minimum 8 characters. If you forget it, your data cannot be recovered."
+                    fullWidth
+                  />
+                  <TextField
+                    label="Confirm passphrase"
+                    type="password"
+                    value={initPass2}
+                    onChange={(e) => setInitPass2(e.target.value)}
+                    fullWidth
+                  />
+                </Stack>
+              ) : null}
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
+                <Button variant="contained" onClick={initDb} disabled={!initCanSubmit}>
+                  Create database
+                </Button>
+                <Button variant="outlined" onClick={refresh} disabled={busy}>
+                  Refresh
+                </Button>
+              </Stack>
+            </Box>
           ) : null}
 
-          <Divider sx={{ my: 2 }} />
+          {needsUnlock ? (
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, mt: 2 }}>
+                Unlock database
+              </Typography>
+              <Stack spacing={2} sx={{ mt: 2 }}>
+                <TextField
+                  label="Passphrase"
+                  type="password"
+                  value={unlockPass}
+                  onChange={(e) => setUnlockPass(e.target.value)}
+                  fullWidth
+                />
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <Button variant="contained" onClick={unlockDb} disabled={!unlockCanSubmit}>
+                    Unlock
+                  </Button>
+                  <Button variant="outlined" onClick={refresh} disabled={busy}>
+                    Refresh
+                  </Button>
+                </Stack>
+              </Stack>
+            </Box>
+          ) : null}
 
-          <Typography variant="body2" color="text.secondary">
-            Next up: DB setup (Secure vs Standard), Trades CRUD, Journal by day.
-          </Typography>
+          {status && status.db.configured && (!status.db.encrypted || status.db.unlocked) ? (
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, mt: 2 }}>
+                Next: Trades & Journal
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Database is ready. Next we’ll build Trades CRUD, Journal by day, rules checklist, and settings.
+              </Typography>
+            </Box>
+          ) : null}
         </Stack>
       </Container>
     </Box>
