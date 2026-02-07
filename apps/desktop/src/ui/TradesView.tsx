@@ -292,8 +292,8 @@ export default function TradesView({ timezone }: { timezone: string | null }) {
                     component="span"
                     sx={{
                       ml: 1,
-                      px: 1,
-                      py: 0.25,
+                      px: 0.75,
+                      py: 0,
                       borderRadius: 1,
                       bgcolor: t.pnl_net >= 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
                       color: t.pnl_net >= 0 ? '#22c55e' : '#ef4444',
@@ -301,6 +301,10 @@ export default function TradesView({ timezone }: { timezone: string | null }) {
                       borderColor: t.pnl_net >= 0 ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.35)',
                       fontFamily: 'monospace',
                       fontWeight: 800,
+                      fontSize: '0.85em',
+                      lineHeight: 1.6,
+                      display: 'inline-flex',
+                      alignItems: 'center',
                     }}
                   >
                     {money(t.pnl_net)}
