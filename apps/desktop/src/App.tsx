@@ -386,10 +386,12 @@ export default function App() {
           {!ready ? (
             <>
               <Typography variant="h4" sx={{ fontWeight: 800 }}>
-                Setup
+                {needsInit ? 'Setup' : 'Unlock'}
               </Typography>
               <Typography color="text.secondary">
-                Local-first. No sign-in. Optional encrypted database.
+                {needsInit
+                  ? 'Local-first. No sign-in. Optional encrypted database.'
+                  : 'Enter your passphrase to unlock your local database.'}
               </Typography>
             </>
           ) : (
