@@ -31,7 +31,12 @@ See:
 - `docs/THREAT_MODEL.md`
 
 ## Install / Run (users)
-**Releases are not published yet.** For now, you run FTJournal from source.
+### Download (recommended)
+Download the latest prebuilt app from **GitHub Releases**:
+https://github.com/AIBotCasey/futures-trading-journal-desktop/releases
+
+### Run from source
+Releases may not always be available for every commit. You can also run FTJournal from source.
 
 ### macOS
 1) Install prerequisites:
