@@ -3,6 +3,8 @@ use parking_lot::Mutex;
 use rusqlite::{params, Connection};
 use std::path::Path;
 
+use crate::db_seed::seed_default_rules;
+
 #[derive(Debug, Clone, Copy, serde::Serialize)]
 pub struct DbStatus {
     pub configured: bool,
@@ -195,6 +197,8 @@ fn migrate_to_v1(conn: &Connection) -> anyhow::Result<()> {
         );
         ",
     )?;
+
+    seed_default_rules(conn)?;
 
     // Journal
     conn.execute_batch(

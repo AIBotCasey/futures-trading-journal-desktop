@@ -1,10 +1,92 @@
 use crate::{config, db::DbState};
+use crate::models::{Rule, Settings};
+
 use std::path::PathBuf;
 use tauri::Manager;
 
 #[derive(Debug, serde::Serialize)]
 pub struct AppStatus {
     pub db: crate::db::DbStatus,
+}
+
+#[tauri::command]
+pub fn settings_get(state: tauri::State<'_, DbState>) -> Result<Settings, String> {
+    state
+        .with_conn(|conn| {
+            let tz = crate::settings::get_timezone(conn)?;
+            Ok(Settings { timezone: tz })
+        })
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct SettingsUpdateRequest {
+    pub timezone: String,
+}
+
+#[tauri::command]
+pub fn settings_update(state: tauri::State<'_, DbState>, req: SettingsUpdateRequest) -> Result<Settings, String> {
+    state
+        .with_conn(|conn| {
+            crate::settings::set_timezone(conn, &req.timezone)?;
+            Ok(Settings {
+                timezone: req.timezone,
+            })
+        })
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn rules_list(state: tauri::State<'_, DbState>) -> Result<Vec<Rule>, String> {
+    state
+        .with_conn(|conn| {
+            let mut stmt = conn.prepare("SELECT id, label, sort_order FROM rules ORDER BY sort_order ASC")?;
+            let rows = stmt.query_map([], |row| {
+                Ok(Rule {
+                    id: row.get(0)?,
+                    label: row.get(1)?,
+                    sort_order: row.get(2)?,
+                })
+            })?;
+
+            let mut out = Vec::new();
+            for r in rows {
+                out.push(r?);
+            }
+            Ok(out)
+        })
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct RuleUpsertRequest {
+    pub id: String,
+    pub label: String,
+    pub sort_order: i64,
+}
+
+#[tauri::command]
+pub fn rules_upsert(state: tauri::State<'_, DbState>, req: RuleUpsertRequest) -> Result<(), String> {
+    state
+        .with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO rules (id, label, sort_order) VALUES (?1, ?2, ?3)
+                 ON CONFLICT(id) DO UPDATE SET label=excluded.label, sort_order=excluded.sort_order",
+                rusqlite::params![req.id, req.label, req.sort_order],
+            )?;
+            Ok(())
+        })
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn rules_delete(state: tauri::State<'_, DbState>, id: String) -> Result<(), String> {
+    state
+        .with_conn(|conn| {
+            conn.execute("DELETE FROM rules WHERE id = ?1", rusqlite::params![id])?;
+            Ok(())
+        })
+        .map_err(|e| e.to_string())
 }
 
 fn config_path(app: &tauri::AppHandle) -> anyhow::Result<PathBuf> {

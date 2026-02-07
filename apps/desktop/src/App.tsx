@@ -8,12 +8,18 @@ import {
   Container,
   Divider,
   FormControlLabel,
+  IconButton,
+  List,
+  ListItem,
+  ListItemSecondaryAction,
+  ListItemText,
   Stack,
   Switch,
   TextField,
   Toolbar,
   Typography,
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 type DbStatus = {
   configured: boolean;
@@ -25,8 +31,194 @@ type AppStatus = {
   db: DbStatus;
 };
 
+type Settings = {
+  timezone: string;
+};
+
+type Rule = {
+  id: string;
+  label: string;
+  sort_order: number;
+};
+
 async function getStatus(): Promise<AppStatus> {
   return invoke<AppStatus>('app_get_status');
+}
+
+async function settingsGet(): Promise<Settings> {
+  return invoke<Settings>('settings_get');
+}
+
+async function settingsUpdate(timezone: string): Promise<Settings> {
+  return invoke<Settings>('settings_update', { req: { timezone } });
+}
+
+async function rulesList(): Promise<Rule[]> {
+  return invoke<Rule[]>('rules_list');
+}
+
+async function rulesUpsert(rule: Rule): Promise<void> {
+  return invoke<void>('rules_upsert', { req: rule });
+}
+
+async function rulesDelete(id: string): Promise<void> {
+  return invoke<void>('rules_delete', { id });
+}
+
+function ReadySection({ busy }: { busy: boolean }) {
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [rules, setRules] = useState<Rule[]>([]);
+  const [tzDraft, setTzDraft] = useState('');
+  const [newRuleId, setNewRuleId] = useState('');
+  const [newRuleLabel, setNewRuleLabel] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const [s, r] = await Promise.all([settingsGet(), rulesList()]);
+        setSettings(s);
+        setTzDraft(s.timezone);
+        setRules(r);
+      } catch (e) {
+        setError(String(e));
+      }
+    })();
+  }, []);
+
+  async function refresh() {
+    const [s, r] = await Promise.all([settingsGet(), rulesList()]);
+    setSettings(s);
+    setTzDraft(s.timezone);
+    setRules(r);
+  }
+
+  async function saveTimezone() {
+    setSaving(true);
+    setError('');
+    try {
+      const s = await settingsUpdate(tzDraft.trim());
+      setSettings(s);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function addRule() {
+    const id = newRuleId.trim();
+    const label = newRuleLabel.trim();
+    if (!id || !label) return;
+
+    setSaving(true);
+    setError('');
+    try {
+      await rulesUpsert({ id, label, sort_order: rules.length });
+      setNewRuleId('');
+      setNewRuleLabel('');
+      await refresh();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeRule(id: string) {
+    setSaving(true);
+    setError('');
+    try {
+      await rulesDelete(id);
+      await refresh();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const disableActions = busy || saving;
+
+  return (
+    <Box>
+      <Typography variant="h5" sx={{ fontWeight: 800, mt: 2 }}>
+        Settings
+      </Typography>
+
+      {error ? <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert> : null}
+
+      <Stack spacing={2} sx={{ mt: 2 }}>
+        <TextField
+          label="Timezone (IANA)"
+          value={tzDraft}
+          onChange={(e) => setTzDraft(e.target.value)}
+          helperText={settings ? `Current: ${settings.timezone}` : 'Loading…'}
+          fullWidth
+        />
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Button variant="contained" onClick={saveTimezone} disabled={disableActions || tzDraft.trim().length === 0}>
+            Save timezone
+          </Button>
+          <Button variant="outlined" onClick={refresh} disabled={disableActions}>
+            Refresh
+          </Button>
+        </Stack>
+      </Stack>
+
+      <Divider sx={{ my: 3 }} />
+
+      <Typography variant="h5" sx={{ fontWeight: 800 }}>
+        Rules checklist
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+        These appear as checkboxes on every trade.
+      </Typography>
+
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
+        <TextField
+          label="Rule id"
+          value={newRuleId}
+          onChange={(e) => setNewRuleId(e.target.value)}
+          placeholder="e.g. followed_plan"
+          fullWidth
+        />
+        <TextField
+          label="Label"
+          value={newRuleLabel}
+          onChange={(e) => setNewRuleLabel(e.target.value)}
+          placeholder="e.g. Followed the trade plan"
+          fullWidth
+        />
+        <Button variant="contained" onClick={addRule} disabled={disableActions || !newRuleId.trim() || !newRuleLabel.trim()}>
+          Add
+        </Button>
+      </Stack>
+
+      <List dense sx={{ mt: 1, bgcolor: 'background.paper', borderRadius: 2 }}>
+        {rules.map((r) => (
+          <ListItem key={r.id} divider>
+            <ListItemText primary={r.label} secondary={r.id} />
+            <ListItemSecondaryAction>
+              <IconButton edge="end" aria-label="delete" onClick={() => removeRule(r.id)} disabled={disableActions}>
+                <DeleteIcon />
+              </IconButton>
+            </ListItemSecondaryAction>
+          </ListItem>
+        ))}
+      </List>
+
+      <Divider sx={{ my: 3 }} />
+
+      <Typography variant="h5" sx={{ fontWeight: 800 }}>
+        Next: Trades & Journal
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Settings/rules are wired to the local database. Next we’ll build Trades CRUD and the Journal screens.
+      </Typography>
+    </Box>
+  );
 }
 
 export default function App() {
@@ -215,14 +407,7 @@ export default function App() {
           ) : null}
 
           {status && status.db.configured && (!status.db.encrypted || status.db.unlocked) ? (
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 2 }}>
-                Next: Trades & Journal
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Database is ready. Next we’ll build Trades CRUD, Journal by day, rules checklist, and settings.
-              </Typography>
-            </Box>
+            <ReadySection busy={busy} />
           ) : null}
         </Stack>
       </Container>

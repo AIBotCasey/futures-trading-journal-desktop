@@ -1,6 +1,9 @@
 mod commands;
 mod config;
 mod db;
+mod db_seed;
+mod models;
+mod settings;
 
 use crate::db::DbState;
 use tauri::Manager;
@@ -28,7 +31,12 @@ pub fn run() {
             greet,
             commands::app_get_status,
             commands::db_init,
-            commands::db_unlock
+            commands::db_unlock,
+            commands::settings_get,
+            commands::settings_update,
+            commands::rules_list,
+            commands::rules_upsert,
+            commands::rules_delete
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
