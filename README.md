@@ -18,7 +18,26 @@ Early development (v0.1 in progress).
 - **Filters + quick stats**: Symbol/session/outcome/date filters + win/loss totals
 - **Local SQLite** with **optional encryption (SQLCipher)**
 - **Backup/restore**: Export/import database file (local-first)
-- **CSV import (generic)**: Import trades from a CSV (MVP)
+- **CSV import (generic MVP)**: Import trades from a CSV
+
+## Screenshots
+_(Coming next)_
+
+If you want to add screenshots:
+- Save PNGs into `docs/screenshots/`
+- Update this section to embed them, e.g.
+
+```md
+![Trades](docs/screenshots/trades.png)
+![Journal](docs/screenshots/journal.png)
+![Settings](docs/screenshots/settings.png)
+```
+
+## Notes on unsigned builds
+FTJournal releases are **not code-signed/notarized**.
+
+- **macOS**: you may need to right-click the app → **Open** on first launch (Gatekeeper).
+- **Windows**: SmartScreen may warn; click **More info** → **Run anyway**.
 
 ## Changelog
 See `CHANGELOG.md`.
