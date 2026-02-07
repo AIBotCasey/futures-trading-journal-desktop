@@ -54,6 +54,11 @@ impl DbState {
             anyhow::bail!("Database already exists at {}", path.display());
         }
 
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)
+                .with_context(|| format!("create db directory {}", parent.display()))?;
+        }
+
         let conn = Connection::open(path).with_context(|| format!("open db at {}", path.display()))?;
         set_pragmas(&conn, encrypted, passphrase)?;
         migrate_to_v1(&conn)?;
@@ -63,6 +68,10 @@ impl DbState {
     }
 
     pub fn open_existing(&self, path: &Path, encrypted: bool, passphrase: Option<&str>) -> anyhow::Result<()> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)
+                .with_context(|| format!("create db directory {}", parent.display()))?;
+        }
         let conn = Connection::open(path).with_context(|| format!("open db at {}", path.display()))?;
         set_pragmas(&conn, encrypted, passphrase)?;
 
