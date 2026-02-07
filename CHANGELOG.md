@@ -1,6 +1,10 @@
 # Changelog
 
-<!-- last: 60c0d162c60e09fe1f927eb24552522bd7c571d8 -->
+<!-- last: cfd0d7479415540086476f41da26286dd9c9dc2d -->
+
+## 2026-02-07
+
+- feat: features list + changelog + csv import (cfd0d74)
 
 ## 2026-02-07
 
