@@ -287,25 +287,30 @@ export default function TradesView({ timezone }: { timezone: string | null }) {
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
               <Box sx={{ flex: 1 }}>
                 <Typography sx={{ fontWeight: 800 }}>
-                  {t.symbol} · {t.side.toUpperCase()} · {t.qty}
+                  {t.symbol} · {t.side.toUpperCase()} · {t.qty}{' '}
+                  <Box
+                    component="span"
+                    sx={{
+                      ml: 1,
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: 1,
+                      bgcolor: t.pnl_net >= 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                      color: t.pnl_net >= 0 ? '#22c55e' : '#ef4444',
+                      border: '1px solid',
+                      borderColor: t.pnl_net >= 0 ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.35)',
+                      fontFamily: 'monospace',
+                      fontWeight: 800,
+                    }}
+                  >
+                    {money(t.pnl_net)}
+                  </Box>
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Entry: {fmtDate(t.entry_time_utc, tz)} · Exit: {fmtDate(t.exit_time_utc, tz)} · Session: {t.session}
                 </Typography>
               </Box>
               <Stack direction="row" spacing={1}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  disabled
-                  sx={{
-                    opacity: 1,
-                    borderColor: t.pnl_net >= 0 ? '#22c55e' : '#ef4444',
-                    color: t.pnl_net >= 0 ? '#22c55e' : '#ef4444',
-                  }}
-                >
-                  {money(t.pnl_net)}
-                </Button>
                 <Button variant="outlined" size="small" onClick={() => editTrade(t.id)} disabled={saving}>
                   Edit
                 </Button>
