@@ -1,6 +1,11 @@
 # Changelog
 
-<!-- last: cfd0d7479415540086476f41da26286dd9c9dc2d -->
+<!-- last: e4f997c84a7a5654218e304487dcca70455448ea -->
+
+## 2026-02-07
+
+- chore: update changelog (b0156b0)
+- ci: build installers and draft GitHub Releases on tags (e4f997c)
 
 ## 2026-02-07
 
