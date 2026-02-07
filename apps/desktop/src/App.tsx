@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   Container,
+  Autocomplete,
   Divider,
   FormControlLabel,
   IconButton,
@@ -65,9 +66,36 @@ async function rulesDelete(id: string): Promise<void> {
   return invoke<void>('rules_delete', { id });
 }
 
-function ReadySection({ busy }: { busy: boolean }) {
+function getTimeZoneOptions(): string[] {
+  // Best case: use the platform's supported IANA time zones.
+  // supportedValuesOf is available in modern runtimes.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supported = (Intl as any)?.supportedValuesOf?.('timeZone') as string[] | undefined;
+  if (supported && Array.isArray(supported) && supported.length > 0) return supported;
+
+  // Fallback: a practical shortlist.
+  return [
+    'America/New_York',
+    'America/Chicago',
+    'America/Denver',
+    'America/Los_Angeles',
+    'America/Phoenix',
+    'America/Anchorage',
+    'Pacific/Honolulu',
+    'Europe/London',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Asia/Tokyo',
+    'Asia/Hong_Kong',
+    'Asia/Singapore',
+    'Australia/Sydney',
+  ];
+}
+
+function ReadySection({ busy, onTimezoneChanged }: { busy: boolean; onTimezoneChanged: (tz: string) => void }) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [rules, setRules] = useState<Rule[]>([]);
+  const tzOptions = useMemo(() => getTimeZoneOptions(), []);
   const [tzDraft, setTzDraft] = useState('');
   const [newRuleId, setNewRuleId] = useState('');
   const [newRuleLabel, setNewRuleLabel] = useState('');
@@ -98,8 +126,10 @@ function ReadySection({ busy }: { busy: boolean }) {
     setSaving(true);
     setError('');
     try {
-      const s = await settingsUpdate(tzDraft.trim());
+      const tz = tzDraft.trim();
+      const s = await settingsUpdate(tz);
       setSettings(s);
+      onTimezoneChanged(tz);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -150,12 +180,18 @@ function ReadySection({ busy }: { busy: boolean }) {
       {error ? <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert> : null}
 
       <Stack spacing={2} sx={{ mt: 2 }}>
-        <TextField
-          label="Timezone (IANA)"
-          value={tzDraft}
-          onChange={(e) => setTzDraft(e.target.value)}
-          helperText={settings ? `Current: ${settings.timezone}` : 'Loading…'}
-          fullWidth
+        <Autocomplete
+          options={tzOptions}
+          value={tzDraft || null}
+          onChange={(_, v) => setTzDraft(v ?? '')}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Timezone"
+              helperText={settings ? `Current: ${settings.timezone}` : 'Loading…'}
+              fullWidth
+            />
+          )}
         />
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <Button variant="contained" onClick={saveTimezone} disabled={disableActions || tzDraft.trim().length === 0}>
@@ -226,6 +262,9 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>('');
 
+  const [clockTz, setClockTz] = useState<string | null>(null);
+  const [clockText, setClockText] = useState<string>(() => new Date().toLocaleTimeString());
+
   // init form
   const [initEncrypted, setInitEncrypted] = useState(true);
   const [initPass, setInitPass] = useState('');
@@ -243,6 +282,40 @@ export default function App() {
       }
     })();
   }, []);
+
+  const ready = status && status.db.configured && (!status.db.encrypted || status.db.unlocked);
+
+  useEffect(() => {
+    if (!ready) return;
+    // Load timezone for the top-right clock.
+    void (async () => {
+      try {
+        const s = await settingsGet();
+        setClockTz(s.timezone);
+      } catch {
+        // ignore
+      }
+    })();
+  }, [ready]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      try {
+        const now = new Date();
+        const txt = now.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+          ...(clockTz ? { timeZone: clockTz } : {}),
+        });
+        setClockText(txt);
+      } catch {
+        setClockText(new Date().toLocaleTimeString());
+      }
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [clockTz]);
 
   const needsInit = status ? !status.db.configured : false;
   const needsUnlock = status ? status.db.configured && status.db.encrypted && !status.db.unlocked : false;
@@ -300,7 +373,6 @@ export default function App() {
     }
   }
 
-  const ready = status && status.db.configured && (!status.db.encrypted || status.db.unlocked);
   const [tab, setTab] = useState<'trades' | 'journal' | 'settings'>('trades');
 
   return (
@@ -311,6 +383,9 @@ export default function App() {
             FTJournal
           </Typography>
           <Box sx={{ flex: 1 }} />
+          <Typography variant="body2" sx={{ fontFamily: 'monospace', mr: 1.5 }} color="text.secondary">
+            {clockText}
+          </Typography>
           <Button variant="outlined" size="small" disabled>
             Offline
           </Button>
@@ -433,7 +508,7 @@ export default function App() {
           ) : (
             <>
               {tab === 'settings' ? (
-                <ReadySection busy={busy} />
+                <ReadySection busy={busy} onTimezoneChanged={(tz) => setClockTz(tz)} />
               ) : tab === 'journal' ? (
                 <Alert severity="info">Journal UI coming next.</Alert>
               ) : (
