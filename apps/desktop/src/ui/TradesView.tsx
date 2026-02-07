@@ -231,12 +231,7 @@ export default function TradesView({ timezone }: { timezone: string | null }) {
   return (
     <Box>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' }, mb: 2 }}>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" sx={{ fontWeight: 800 }}>
-            Trades
-          </Typography>
-          {/* subtitle removed */}
-        </Box>
+        <Box sx={{ flex: 1 }} />
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={refresh} disabled={loading || saving}>
             Refresh

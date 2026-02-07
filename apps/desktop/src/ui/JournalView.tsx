@@ -126,14 +126,7 @@ export default function JournalView() {
   return (
     <Box>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' }, mb: 2 }}>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" sx={{ fontWeight: 800 }}>
-            Journal
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Calendar view (profit/loss by day)
-          </Typography>
-        </Box>
+        <Box sx={{ flex: 1 }} />
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={prevMonth}>
             Prev
