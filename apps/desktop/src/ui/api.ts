@@ -52,3 +52,11 @@ export async function journalMonthSummary(year: number, month: number): Promise<
 export async function journalDayTrades(date_local: string): Promise<TradeHighlight[]> {
   return invoke<TradeHighlight[]>('journal_day_trades', { req: { date_local } });
 }
+
+export async function backupExport(dest_path: string): Promise<AppStatus> {
+  return invoke<AppStatus>('backup_export', { req: { dest_path } });
+}
+
+export async function backupImport(src_path: string): Promise<AppStatus> {
+  return invoke<AppStatus>('backup_import', { req: { src_path } });
+}

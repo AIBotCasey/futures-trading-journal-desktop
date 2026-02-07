@@ -6,6 +6,7 @@ mod models;
 mod settings;
 mod trades;
 mod journal;
+mod backup;
 
 use crate::db::DbState;
 use tauri::Manager;
@@ -20,6 +21,7 @@ fn greet(name: &str) -> String {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(DbState::default())
         .setup(|app| {
             let handle = app.handle();
@@ -45,7 +47,9 @@ pub fn run() {
             commands::trades_update,
             commands::trades_delete,
             commands::journal_month_summary,
-            commands::journal_day_trades
+            commands::journal_day_trades,
+            commands::backup_export,
+            commands::backup_import
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

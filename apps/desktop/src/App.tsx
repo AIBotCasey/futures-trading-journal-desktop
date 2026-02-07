@@ -20,10 +20,11 @@ import {
   Toolbar,
   Typography,
 } from '@mui/material';
+import { open, save } from '@tauri-apps/plugin-dialog';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import type { AppStatus, Rule, Settings } from './ui/types';
-import { appGetStatus as getStatus, rulesDelete, rulesList, rulesUpsert, settingsGet, settingsUpdate } from './ui/api';
+import { appGetStatus as getStatus, backupExport, backupImport, rulesDelete, rulesList, rulesUpsert, settingsGet, settingsUpdate } from './ui/api';
 import TradesView from './ui/TradesView';
 import JournalView from './ui/JournalView';
 
@@ -76,7 +77,15 @@ function getTimeZoneOptions(): string[] {
   ];
 }
 
-function ReadySection({ busy, onTimezoneChanged }: { busy: boolean; onTimezoneChanged: (tz: string) => void }) {
+function ReadySection({
+  busy,
+  onTimezoneChanged,
+  onStatusChanged,
+}: {
+  busy: boolean;
+  onTimezoneChanged: (tz: string) => void;
+  onStatusChanged: (s: AppStatus) => void;
+}) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [rules, setRules] = useState<Rule[]>([]);
   const tzOptions = useMemo(() => getTimeZoneOptions(), []);
@@ -85,6 +94,7 @@ function ReadySection({ busy, onTimezoneChanged }: { busy: boolean; onTimezoneCh
   const [newRuleLabel, setNewRuleLabel] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -153,7 +163,45 @@ function ReadySection({ busy, onTimezoneChanged }: { busy: boolean; onTimezoneCh
     }
   }
 
-  const disableActions = busy || saving;
+  const disableActions = busy || saving || backupBusy;
+
+  async function exportBackup() {
+    setBackupBusy(true);
+    setError('');
+    try {
+      const dest = await save({
+        title: 'Export FTJournal database',
+        defaultPath: 'ftjournal-backup.db',
+      });
+      if (!dest) return;
+      const s = await backupExport(dest);
+      onStatusChanged(s);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function importBackup() {
+    setBackupBusy(true);
+    setError('');
+    try {
+      const src = await open({
+        title: 'Import FTJournal database',
+        multiple: false,
+        directory: false,
+      });
+      const path = Array.isArray(src) ? src[0] : src;
+      if (!path) return;
+      const s = await backupImport(path);
+      onStatusChanged(s);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBackupBusy(false);
+    }
+  }
 
   return (
     <Box>
@@ -228,11 +276,20 @@ function ReadySection({ busy, onTimezoneChanged }: { busy: boolean; onTimezoneCh
       <Divider sx={{ my: 3 }} />
 
       <Typography variant="h5" sx={{ fontWeight: 800 }}>
-        Next: Trades & Journal
+        Backup / Restore
       </Typography>
-      <Typography variant="body2" color="text.secondary">
-        Settings/rules are wired to the local database. Next we’ll build Trades CRUD and the Journal screens.
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+        Export or import your local database file.
       </Typography>
+
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
+        <Button variant="contained" onClick={exportBackup} disabled={disableActions}>
+          Export backup
+        </Button>
+        <Button variant="outlined" onClick={importBackup} disabled={disableActions}>
+          Import backup
+        </Button>
+      </Stack>
     </Box>
   );
 }
@@ -354,6 +411,7 @@ export default function App() {
   }
 
   const [tab, setTab] = useState<'trades' | 'journal' | 'settings'>('trades');
+  const [pendingEditTradeId, setPendingEditTradeId] = useState<string | null>(null);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
@@ -490,11 +548,24 @@ export default function App() {
           ) : (
             <>
               {tab === 'settings' ? (
-                <ReadySection busy={busy} onTimezoneChanged={(tz) => setClockTz(tz)} />
+                <ReadySection
+                  busy={busy}
+                  onTimezoneChanged={(tz) => setClockTz(tz)}
+                  onStatusChanged={(s) => setStatus(s)}
+                />
               ) : tab === 'journal' ? (
-                <JournalView />
+                <JournalView
+                  onEditTrade={(tradeId) => {
+                    setPendingEditTradeId(tradeId);
+                    setTab('trades');
+                  }}
+                />
               ) : (
-                <TradesView timezone={clockTz} />
+                <TradesView
+                  timezone={clockTz}
+                  openTradeId={pendingEditTradeId}
+                  onOpenedTrade={() => setPendingEditTradeId(null)}
+                />
               )}
             </>
           )}

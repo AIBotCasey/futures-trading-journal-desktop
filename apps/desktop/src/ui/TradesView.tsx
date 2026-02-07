@@ -88,7 +88,15 @@ function buildDefaultForm(rules: Rule[]): TradeFormState {
   };
 }
 
-export default function TradesView({ timezone }: { timezone: string | null }) {
+export default function TradesView({
+  timezone,
+  openTradeId,
+  onOpenedTrade,
+}: {
+  timezone: string | null;
+  openTradeId?: string | null;
+  onOpenedTrade?: () => void;
+}) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [rules, setRules] = useState<Rule[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -122,6 +130,15 @@ export default function TradesView({ timezone }: { timezone: string | null }) {
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!openTradeId) return;
+    void (async () => {
+      await editTrade(openTradeId);
+      onOpenedTrade?.();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openTradeId]);
 
   const stats = useMemo(() => {
     const total = trades.reduce((acc, t) => acc + (t.pnl_net ?? 0), 0);

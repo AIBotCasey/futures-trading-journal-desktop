@@ -36,7 +36,11 @@ function daysInMonth(year: number, month: number) {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
-export default function JournalView() {
+export default function JournalView({
+  onEditTrade,
+}: {
+  onEditTrade: (tradeId: string) => void;
+}) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -235,12 +239,20 @@ export default function JournalView() {
               return (
                 <Box
                   key={t.id}
+                  onClick={() => {
+                    onEditTrade(t.id);
+                    setSelectedDay(null);
+                  }}
+                  role="button"
+                  tabIndex={0}
                   sx={{
                     p: 1.5,
                     borderRadius: 2,
                     border: '1px solid',
                     borderColor: 'divider',
                     bgcolor: 'background.paper',
+                    cursor: 'pointer',
+                    '&:hover': { filter: 'brightness(1.08)' },
                   }}
                 >
                   <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>

@@ -169,6 +169,30 @@ pub fn journal_day_trades(state: tauri::State<'_, DbState>, req: JournalDayTrade
         .map_err(|e| e.to_string())
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub struct BackupExportRequest {
+    pub dest_path: String,
+}
+
+#[tauri::command]
+pub fn backup_export(app: tauri::AppHandle, state: tauri::State<'_, DbState>, req: BackupExportRequest) -> Result<AppStatus, String> {
+    let dest = std::path::PathBuf::from(req.dest_path);
+    crate::backup::export_db(&app, state.inner(), &dest).map_err(|e| e.to_string())?;
+    Ok(AppStatus { db: state.status() })
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct BackupImportRequest {
+    pub src_path: String,
+}
+
+#[tauri::command]
+pub fn backup_import(app: tauri::AppHandle, state: tauri::State<'_, DbState>, req: BackupImportRequest) -> Result<AppStatus, String> {
+    let src = std::path::PathBuf::from(req.src_path);
+    crate::backup::import_db(&app, state.inner(), &src).map_err(|e| e.to_string())?;
+    Ok(AppStatus { db: state.status() })
+}
+
 fn config_path(app: &tauri::AppHandle) -> anyhow::Result<PathBuf> {
     let dir = app
         .path()
