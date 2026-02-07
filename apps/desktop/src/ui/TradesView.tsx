@@ -231,8 +231,32 @@ export default function TradesView({ timezone }: { timezone: string | null }) {
   return (
     <Box>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' }, mb: 2 }}>
-        <Box sx={{ flex: 1 }} />
-        <Stack direction="row" spacing={1}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ flex: 1 }}>
+          <Button variant="outlined" size="small" disabled sx={{ opacity: 1, justifyContent: 'flex-start' }}>
+            Count: {stats.count}
+          </Button>
+          <Button variant="outlined" size="small" disabled sx={{ opacity: 1, justifyContent: 'flex-start' }}>
+            Wins: {stats.wins}
+          </Button>
+          <Button variant="outlined" size="small" disabled sx={{ opacity: 1, justifyContent: 'flex-start' }}>
+            Losses: {stats.losses}
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            disabled
+            sx={{
+              opacity: 1,
+              justifyContent: 'flex-start',
+              borderColor: stats.total >= 0 ? '#22c55e' : '#ef4444',
+              color: stats.total >= 0 ? '#22c55e' : '#ef4444',
+            }}
+          >
+            Total: {money(stats.total)}
+          </Button>
+        </Stack>
+
+        <Stack direction="row" spacing={1} sx={{ justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
           <Button variant="outlined" onClick={refresh} disabled={loading || saving}>
             Refresh
           </Button>
@@ -240,26 +264,6 @@ export default function TradesView({ timezone }: { timezone: string | null }) {
             Add trade
           </Button>
         </Stack>
-      </Stack>
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }}>
-        <Button variant="outlined" size="small" disabled sx={{ opacity: 1 }}>
-          Count: {stats.count}
-        </Button>
-        <Button variant="outlined" size="small" disabled sx={{ opacity: 1 }}>
-          Wins: {stats.wins}
-        </Button>
-        <Button variant="outlined" size="small" disabled sx={{ opacity: 1 }}>
-          Losses: {stats.losses}
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          disabled
-          sx={{ opacity: 1, borderColor: stats.total >= 0 ? '#22c55e' : '#ef4444', color: stats.total >= 0 ? '#22c55e' : '#ef4444' }}
-        >
-          Total: {money(stats.total)}
-        </Button>
       </Stack>
 
       {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}

@@ -125,8 +125,10 @@ export default function JournalView() {
 
   return (
     <Box>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' }, mb: 2 }}>
-        <Box sx={{ flex: 1 }} />
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' }, mb: 1 }}>
+        <Typography sx={{ fontWeight: 900, flex: 1 }}>
+          {monthLabel}
+        </Typography>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={prevMonth}>
             Prev
@@ -139,8 +141,6 @@ export default function JournalView() {
           </Button>
         </Stack>
       </Stack>
-
-      <Typography sx={{ fontWeight: 800, mb: 1 }}>{monthLabel}</Typography>
 
       {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
       {loading ? <Alert severity="info" sx={{ mb: 2 }}>Loading…</Alert> : null}
