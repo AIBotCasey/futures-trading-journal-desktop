@@ -316,6 +316,8 @@ export default function TradesView({
           value={filterSymbol}
           onChange={(e) => setFilterSymbol(e.target.value)}
           size="small"
+          sx={{ width: 120 }}
+          inputProps={{ maxLength: 10 }}
         />
         <FormControl size="small" sx={{ minWidth: 140 }}>
           <InputLabel>Session</InputLabel>

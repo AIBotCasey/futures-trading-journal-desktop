@@ -205,29 +205,42 @@ export default function JournalView({
               role="button"
               tabIndex={0}
               sx={{
-                minHeight: 78,
+                height: 86,
                 borderRadius: 2,
                 border: '1px solid',
                 borderColor: 'divider',
                 bgcolor: bg,
                 p: 1,
                 cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
                 '&:hover': { filter: 'brightness(1.1)' },
               }}
             >
-              <Typography variant="caption" sx={{ fontWeight: 900 }}>
-                {c.day}
-              </Typography>
-              <Box sx={{ mt: 0.5 }}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'baseline' }}>
+                <Typography variant="caption" sx={{ fontWeight: 900 }}>
+                  {c.day}
+                </Typography>
                 {hasTrades ? (
-                  <>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 900, color }}>
-                      {money(pnl)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {count} trade{count === 1 ? '' : 's'}
-                    </Typography>
-                  </>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                    ({count})
+                  </Typography>
+                ) : null}
+                <Box sx={{ flex: 1 }} />
+              </Stack>
+
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {hasTrades ? (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontFamily: 'monospace',
+                      fontWeight: 900,
+                      color,
+                    }}
+                  >
+                    {money(pnl)}
+                  </Typography>
                 ) : (
                   <Typography variant="caption" sx={{ color }}>
                     No trades
