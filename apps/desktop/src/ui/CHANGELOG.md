@@ -1,6 +1,11 @@
 # Changelog
 
-<!-- last: 9d82c4f1936975788ece2324727efa0a86503b4a -->
+<!-- last: 51b03d1bae78cd5a2c40f7ff379af3cc8591f318 -->
+
+## 2026-02-07
+
+- chore: update changelog (309c7e3)
+- docs: add screenshots (51b03d1)
 
 ## 2026-02-07
 
