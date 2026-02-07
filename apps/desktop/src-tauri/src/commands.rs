@@ -1,5 +1,5 @@
 use crate::{config, db::DbState};
-use crate::models::{DaySummary, Rule, Settings, Trade, TradeHighlight, TradeInput, TradeWithRules};
+use crate::models::{DaySummary, JournalEntry, Rule, Settings, Trade, TradeHighlight, TradeInput, TradeWithRules};
 
 use std::path::PathBuf;
 use tauri::Manager;
@@ -191,6 +191,34 @@ pub fn backup_import(app: tauri::AppHandle, state: tauri::State<'_, DbState>, re
     let src = std::path::PathBuf::from(req.src_path);
     crate::backup::import_db(&app, state.inner(), &src).map_err(|e| e.to_string())?;
     Ok(AppStatus { db: state.status() })
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct JournalEntryGetRequest {
+    pub date_local: String,
+}
+
+#[tauri::command]
+pub fn journal_entry_get(state: tauri::State<'_, DbState>, req: JournalEntryGetRequest) -> Result<JournalEntry, String> {
+    state
+        .with_conn(|conn| crate::journal_entries::get_daily_entry(conn, &req.date_local))
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct JournalEntryUpsertRequest {
+    pub date_local: String,
+    pub text: String,
+}
+
+#[tauri::command]
+pub fn journal_entry_upsert(state: tauri::State<'_, DbState>, req: JournalEntryUpsertRequest) -> Result<(), String> {
+    state
+        .with_conn(|conn| {
+            crate::journal_entries::upsert_daily_entry(conn, &req.date_local, &req.text)?;
+            Ok(())
+        })
+        .map_err(|e| e.to_string())
 }
 
 fn config_path(app: &tauri::AppHandle) -> anyhow::Result<PathBuf> {

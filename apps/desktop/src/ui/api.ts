@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { AppStatus, Settings, Rule, Trade, TradeInput, TradeWithRules, DaySummary, TradeHighlight } from './types';
+import type { AppStatus, Settings, Rule, Trade, TradeInput, TradeWithRules, DaySummary, TradeHighlight, JournalEntry } from './types';
 
 export async function appGetStatus(): Promise<AppStatus> {
   return invoke<AppStatus>('app_get_status');
@@ -59,4 +59,12 @@ export async function backupExport(dest_path: string): Promise<AppStatus> {
 
 export async function backupImport(src_path: string): Promise<AppStatus> {
   return invoke<AppStatus>('backup_import', { req: { src_path } });
+}
+
+export async function journalEntryGet(date_local: string): Promise<JournalEntry> {
+  return invoke<JournalEntry>('journal_entry_get', { req: { date_local } });
+}
+
+export async function journalEntryUpsert(date_local: string, text: string): Promise<void> {
+  return invoke<void>('journal_entry_upsert', { req: { date_local, text } });
 }

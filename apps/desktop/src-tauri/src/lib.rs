@@ -7,6 +7,7 @@ mod settings;
 mod trades;
 mod journal;
 mod backup;
+mod journal_entries;
 
 use crate::db::DbState;
 use tauri::Manager;
@@ -49,7 +50,9 @@ pub fn run() {
             commands::journal_month_summary,
             commands::journal_day_trades,
             commands::backup_export,
-            commands::backup_import
+            commands::backup_import,
+            commands::journal_entry_get,
+            commands::journal_entry_upsert
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

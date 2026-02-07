@@ -73,3 +73,9 @@ pub struct TradeHighlight {
     pub notes: String,
     pub exit_time_utc: i64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JournalEntry {
+    pub date_local: String,
+    pub text: String,
+}

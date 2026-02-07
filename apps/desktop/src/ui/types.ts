@@ -74,3 +74,8 @@ export type TradeHighlight = {
   notes: string;
   exit_time_utc: number;
 };
+
+export type JournalEntry = {
+  date_local: string;
+  text: string;
+};

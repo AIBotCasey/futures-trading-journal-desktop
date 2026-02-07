@@ -109,6 +109,13 @@ export default function TradesView({
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  // Filters
+  const [filterSymbol, setFilterSymbol] = useState('');
+  const [filterSession, setFilterSession] = useState<string>('all');
+  const [filterOutcome, setFilterOutcome] = useState<'all' | 'win' | 'loss'>('all');
+  const [filterStart, setFilterStart] = useState(''); // YYYY-MM-DD
+  const [filterEnd, setFilterEnd] = useState('');   // YYYY-MM-DD
+
   const tz = timezone ?? settings?.timezone ?? undefined;
 
   async function refresh() {
@@ -140,12 +147,29 @@ export default function TradesView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openTradeId]);
 
+  const filteredTrades = useMemo(() => {
+    const sym = filterSymbol.trim().toLowerCase();
+
+    const startMs = filterStart ? new Date(`${filterStart}T00:00:00`).getTime() : null;
+    const endMs = filterEnd ? new Date(`${filterEnd}T23:59:59`).getTime() : null;
+
+    return trades.filter((t) => {
+      if (sym && !t.symbol.toLowerCase().includes(sym)) return false;
+      if (filterSession !== 'all' && t.session !== filterSession) return false;
+      if (filterOutcome === 'win' && !(t.pnl_net > 0)) return false;
+      if (filterOutcome === 'loss' && !(t.pnl_net < 0)) return false;
+      if (startMs != null && t.exit_time_utc < startMs) return false;
+      if (endMs != null && t.exit_time_utc > endMs) return false;
+      return true;
+    });
+  }, [trades, filterSymbol, filterSession, filterOutcome, filterStart, filterEnd]);
+
   const stats = useMemo(() => {
-    const total = trades.reduce((acc, t) => acc + (t.pnl_net ?? 0), 0);
-    const wins = trades.filter((t) => (t.pnl_net ?? 0) > 0).length;
-    const losses = trades.filter((t) => (t.pnl_net ?? 0) < 0).length;
-    return { total, wins, losses, count: trades.length };
-  }, [trades]);
+    const total = filteredTrades.reduce((acc, t) => acc + (t.pnl_net ?? 0), 0);
+    const wins = filteredTrades.filter((t) => (t.pnl_net ?? 0) > 0).length;
+    const losses = filteredTrades.filter((t) => (t.pnl_net ?? 0) < 0).length;
+    return { total, wins, losses, count: filteredTrades.length };
+  }, [filteredTrades]);
 
   function newTrade() {
     if (!settings) return;
@@ -286,10 +310,75 @@ export default function TradesView({
       {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
       {loading ? <Alert severity="info">Loading…</Alert> : null}
 
-      {!loading && trades.length === 0 ? <Alert severity="info">No trades yet.</Alert> : null}
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }}>
+        <TextField
+          label="Symbol"
+          value={filterSymbol}
+          onChange={(e) => setFilterSymbol(e.target.value)}
+          size="small"
+        />
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>Session</InputLabel>
+          <Select
+            label="Session"
+            value={filterSession}
+            onChange={(e) => setFilterSession(e.target.value)}
+          >
+            <MenuItem value="all">All</MenuItem>
+            {SESSIONS.map((s) => (
+              <MenuItem key={s.id} value={s.id}>
+                {s.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>Outcome</InputLabel>
+          <Select
+            label="Outcome"
+            value={filterOutcome}
+            onChange={(e) => setFilterOutcome(e.target.value as 'all' | 'win' | 'loss')}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="win">Wins</MenuItem>
+            <MenuItem value="loss">Losses</MenuItem>
+          </Select>
+        </FormControl>
+        <TextField
+          label="From"
+          type="date"
+          size="small"
+          value={filterStart}
+          onChange={(e) => setFilterStart(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          label="To"
+          type="date"
+          size="small"
+          value={filterEnd}
+          onChange={(e) => setFilterEnd(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => {
+            setFilterSymbol('');
+            setFilterSession('all');
+            setFilterOutcome('all');
+            setFilterStart('');
+            setFilterEnd('');
+          }}
+        >
+          Clear
+        </Button>
+      </Stack>
+
+      {!loading && filteredTrades.length === 0 ? <Alert severity="info">No trades match your filters.</Alert> : null}
 
       <Stack spacing={1}>
-        {trades.map((t) => (
+        {filteredTrades.map((t) => (
           <Box
             key={t.id}
             sx={{

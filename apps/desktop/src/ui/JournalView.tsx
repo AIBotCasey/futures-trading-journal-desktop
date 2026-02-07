@@ -7,11 +7,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Stack,
+  TextField,
   Typography,
 } from '@mui/material';
 import type { DaySummary, TradeHighlight } from './types';
-import { journalDayTrades, journalMonthSummary } from './api';
+import { journalDayTrades, journalEntryGet, journalEntryUpsert, journalMonthSummary } from './api';
 
 function pad2(n: number) {
   return String(n).padStart(2, '0');
@@ -59,6 +61,9 @@ export default function JournalView({
   const [dayTrades, setDayTrades] = useState<TradeHighlight[]>([]);
   const [dayLoading, setDayLoading] = useState(false);
   const [dayError, setDayError] = useState('');
+
+  const [entryText, setEntryText] = useState('');
+  const [entrySaving, setEntrySaving] = useState(false);
 
   async function refresh() {
     setLoading(true);
@@ -117,13 +122,25 @@ export default function JournalView({
     setDayTrades([]);
     setDayError('');
     setDayLoading(true);
+    setEntryText('');
     try {
-      const t = await journalDayTrades(date_local);
+      const [t, entry] = await Promise.all([journalDayTrades(date_local), journalEntryGet(date_local)]);
       setDayTrades(t);
+      setEntryText(entry.text ?? '');
     } catch (e) {
       setDayError(String(e));
     } finally {
       setDayLoading(false);
+    }
+  }
+
+  async function saveEntry() {
+    if (!selectedDay) return;
+    setEntrySaving(true);
+    try {
+      await journalEntryUpsert(selectedDay, entryText);
+    } finally {
+      setEntrySaving(false);
     }
   }
 
@@ -233,6 +250,26 @@ export default function JournalView({
           ) : null}
 
           <Stack spacing={1} sx={{ mt: 1 }}>
+            <TextField
+              label="Journal"
+              value={entryText}
+              onChange={(e) => setEntryText(e.target.value)}
+              fullWidth
+              multiline
+              minRows={6}
+              placeholder="What went well? What needs work?"
+            />
+            <Stack direction="row" spacing={1}>
+              <Button variant="contained" onClick={saveEntry} disabled={dayLoading || entrySaving}>
+                Save
+              </Button>
+              <Button variant="outlined" onClick={() => selectedDay && openDay(selectedDay)} disabled={dayLoading || entrySaving}>
+                Reload
+              </Button>
+            </Stack>
+
+            <Divider sx={{ my: 1 }} />
+
             {dayTrades.map((t) => {
               const color = t.pnl_net >= 0 ? '#22c55e' : '#ef4444';
               const bg = t.pnl_net >= 0 ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)';
