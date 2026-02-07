@@ -300,6 +300,9 @@ export default function App() {
     }
   }
 
+  const ready = status && status.db.configured && (!status.db.encrypted || status.db.unlocked);
+  const [tab, setTab] = useState<'trades' | 'journal' | 'settings'>('trades');
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
       <AppBar position="static" elevation={0} color="transparent">
@@ -318,12 +321,31 @@ export default function App() {
 
       <Container sx={{ py: 4 }} maxWidth="md">
         <Stack spacing={2}>
-          <Typography variant="h4" sx={{ fontWeight: 800 }}>
-            Setup
-          </Typography>
-          <Typography color="text.secondary">
-            Local-first. No sign-in. Optional encrypted database.
-          </Typography>
+          {!ready ? (
+            <>
+              <Typography variant="h4" sx={{ fontWeight: 800 }}>
+                Setup
+              </Typography>
+              <Typography color="text.secondary">
+                Local-first. No sign-in. Optional encrypted database.
+              </Typography>
+            </>
+          ) : (
+            <>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <Button variant={tab === 'trades' ? 'contained' : 'text'} onClick={() => setTab('trades')}>
+                  Trades
+                </Button>
+                <Button variant={tab === 'journal' ? 'contained' : 'text'} onClick={() => setTab('journal')}>
+                  Journal
+                </Button>
+                <Button variant={tab === 'settings' ? 'contained' : 'text'} onClick={() => setTab('settings')}>
+                  Settings
+                </Button>
+              </Stack>
+              <Divider />
+            </>
+          )}
 
           {error ? <Alert severity="error">{error}</Alert> : null}
 
@@ -336,79 +358,89 @@ export default function App() {
             <Alert severity="info">Loading status…</Alert>
           )}
 
-          {needsInit ? (
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 2 }}>
-                Create local database
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Choose Secure mode (encrypted) if you want the database file protected at rest.
-              </Typography>
+          {!ready ? (
+            <>
+              {needsInit ? (
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mt: 2 }}>
+                    Create local database
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Choose Secure mode (encrypted) if you want the database file protected at rest.
+                  </Typography>
 
-              <FormControlLabel
-                control={<Switch checked={initEncrypted} onChange={(_, v) => setInitEncrypted(v)} />}
-                label={initEncrypted ? 'Secure mode (encrypted) — recommended' : 'Standard mode (unencrypted)'}
-              />
+                  <FormControlLabel
+                    control={<Switch checked={initEncrypted} onChange={(_, v) => setInitEncrypted(v)} />}
+                    label={initEncrypted ? 'Secure mode (encrypted) — recommended' : 'Standard mode (unencrypted)'}
+                  />
 
-              {initEncrypted ? (
-                <Stack spacing={2} sx={{ mt: 2 }}>
-                  <TextField
-                    label="Passphrase"
-                    type="password"
-                    value={initPass}
-                    onChange={(e) => setInitPass(e.target.value)}
-                    helperText="Minimum 8 characters. If you forget it, your data cannot be recovered."
-                    fullWidth
-                  />
-                  <TextField
-                    label="Confirm passphrase"
-                    type="password"
-                    value={initPass2}
-                    onChange={(e) => setInitPass2(e.target.value)}
-                    fullWidth
-                  />
-                </Stack>
+                  {initEncrypted ? (
+                    <Stack spacing={2} sx={{ mt: 2 }}>
+                      <TextField
+                        label="Passphrase"
+                        type="password"
+                        value={initPass}
+                        onChange={(e) => setInitPass(e.target.value)}
+                        helperText="Minimum 8 characters. If you forget it, your data cannot be recovered."
+                        fullWidth
+                      />
+                      <TextField
+                        label="Confirm passphrase"
+                        type="password"
+                        value={initPass2}
+                        onChange={(e) => setInitPass2(e.target.value)}
+                        fullWidth
+                      />
+                    </Stack>
+                  ) : null}
+
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
+                    <Button variant="contained" onClick={initDb} disabled={!initCanSubmit}>
+                      Create database
+                    </Button>
+                    <Button variant="outlined" onClick={refresh} disabled={busy}>
+                      Refresh
+                    </Button>
+                  </Stack>
+                </Box>
               ) : null}
 
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
-                <Button variant="contained" onClick={initDb} disabled={!initCanSubmit}>
-                  Create database
-                </Button>
-                <Button variant="outlined" onClick={refresh} disabled={busy}>
-                  Refresh
-                </Button>
-              </Stack>
-            </Box>
-          ) : null}
-
-          {needsUnlock ? (
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 2 }}>
-                Unlock database
-              </Typography>
-              <Stack spacing={2} sx={{ mt: 2 }}>
-                <TextField
-                  label="Passphrase"
-                  type="password"
-                  value={unlockPass}
-                  onChange={(e) => setUnlockPass(e.target.value)}
-                  fullWidth
-                />
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                  <Button variant="contained" onClick={unlockDb} disabled={!unlockCanSubmit}>
-                    Unlock
-                  </Button>
-                  <Button variant="outlined" onClick={refresh} disabled={busy}>
-                    Refresh
-                  </Button>
-                </Stack>
-              </Stack>
-            </Box>
-          ) : null}
-
-          {status && status.db.configured && (!status.db.encrypted || status.db.unlocked) ? (
-            <ReadySection busy={busy} />
-          ) : null}
+              {needsUnlock ? (
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mt: 2 }}>
+                    Unlock database
+                  </Typography>
+                  <Stack spacing={2} sx={{ mt: 2 }}>
+                    <TextField
+                      label="Passphrase"
+                      type="password"
+                      value={unlockPass}
+                      onChange={(e) => setUnlockPass(e.target.value)}
+                      fullWidth
+                    />
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                      <Button variant="contained" onClick={unlockDb} disabled={!unlockCanSubmit}>
+                        Unlock
+                      </Button>
+                      <Button variant="outlined" onClick={refresh} disabled={busy}>
+                        Refresh
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Box>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {tab === 'settings' ? (
+                <ReadySection busy={busy} />
+              ) : tab === 'journal' ? (
+                <Alert severity="info">Journal UI coming next.</Alert>
+              ) : (
+                <Alert severity="info">Trades UI coming next.</Alert>
+              )}
+            </>
+          )}
         </Stack>
       </Container>
     </Box>
