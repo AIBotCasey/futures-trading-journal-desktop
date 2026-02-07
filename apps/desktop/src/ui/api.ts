@@ -34,7 +34,7 @@ export async function tradesGet(id: string): Promise<TradeWithRules> {
 }
 
 export async function tradesCreate(input: TradeInput): Promise<Trade> {
-  return invoke<Trade>('trades_create', input);
+  return invoke<Trade>('trades_create', { input });
 }
 
 export async function tradesUpdate(id: string, input: TradeInput): Promise<Trade> {
