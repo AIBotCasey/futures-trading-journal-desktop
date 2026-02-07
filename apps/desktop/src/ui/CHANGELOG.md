@@ -1,6 +1,11 @@
 # Changelog
 
-<!-- last: e4f997c84a7a5654218e304487dcca70455448ea -->
+<!-- last: 9d82c4f1936975788ece2324727efa0a86503b4a -->
+
+## 2026-02-07
+
+- chore: update changelog (0940973)
+- docs: expand README (features, unsigned build notes, screenshots section) (9d82c4f)
 
 ## 2026-02-07
 
