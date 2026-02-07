@@ -409,6 +409,13 @@ export default function App() {
           <Typography variant="body2" sx={{ fontFamily: 'monospace', mr: 1.5 }} color="text.secondary">
             {clockText}
           </Typography>
+          {status ? (
+            <Stack direction="row" spacing={1} sx={{ mr: 1.5, alignItems: 'center' }}>
+              <StatusPill label="Configured" ok={status.db.configured} />
+              <StatusPill label="Encrypted" ok={status.db.encrypted} />
+              <StatusPill label="Unlocked" ok={status.db.unlocked} />
+            </Stack>
+          ) : null}
           <Button variant="outlined" size="small" disabled>
             Offline
           </Button>
@@ -447,19 +454,7 @@ export default function App() {
 
           {error ? <Alert severity="error">{error}</Alert> : null}
 
-          {status ? (
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: { sm: 'center' } }}>
-              <StatusPill label={`Configured: ${status.db.configured ? 'true' : 'false'}`} ok={status.db.configured} />
-              <StatusPill label={`Encrypted: ${status.db.encrypted ? 'true' : 'false'}`} ok={status.db.encrypted} />
-              <StatusPill label={`Unlocked: ${status.db.unlocked ? 'true' : 'false'}`} ok={status.db.unlocked} />
-            </Stack>
-          ) : (
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Button variant="outlined" size="small" disabled sx={{ opacity: 1 }}>
-                Loading…
-              </Button>
-            </Stack>
-          )}
+          {/* DB status pills moved to the top-right app bar (next to Offline) */}
 
           {!ready ? (
             <>
