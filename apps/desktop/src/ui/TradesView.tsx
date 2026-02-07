@@ -236,7 +236,7 @@ export default function TradesView({ timezone }: { timezone: string | null }) {
             Trades
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Completed trades only. Times display in {tz ?? 'local time'}. {settings?.timezone ? `(Settings TZ: ${settings.timezone})` : ''}
+            Times display in {tz ?? 'local time'}.
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>

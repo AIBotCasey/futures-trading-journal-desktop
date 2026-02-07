@@ -156,10 +156,6 @@ function ReadySection({ busy, onTimezoneChanged }: { busy: boolean; onTimezoneCh
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ fontWeight: 800, mt: 2 }}>
-        Settings
-      </Typography>
-
       {error ? <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert> : null}
 
       <Stack spacing={2} sx={{ mt: 2 }}>
