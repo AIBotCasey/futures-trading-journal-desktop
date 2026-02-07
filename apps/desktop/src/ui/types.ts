@@ -59,3 +59,9 @@ export type TradeWithRules = {
   rules: Rule[];
   checked: Record<string, boolean>;
 };
+
+export type DaySummary = {
+  date_local: string; // YYYY-MM-DD
+  trade_count: number;
+  pnl_net_total: number;
+};

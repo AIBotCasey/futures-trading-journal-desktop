@@ -25,6 +25,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import type { AppStatus, Rule, Settings } from './ui/types';
 import { appGetStatus as getStatus, rulesDelete, rulesList, rulesUpsert, settingsGet, settingsUpdate } from './ui/api';
 import TradesView from './ui/TradesView';
+import JournalView from './ui/JournalView';
 
 function StatusPill({ label, ok }: { label: string; ok: boolean }) {
   const color = ok ? '#22c55e' : '#ef4444';
@@ -489,7 +490,7 @@ export default function App() {
               {tab === 'settings' ? (
                 <ReadySection busy={busy} onTimezoneChanged={(tz) => setClockTz(tz)} />
               ) : tab === 'journal' ? (
-                <Alert severity="info">Journal UI coming next.</Alert>
+                <JournalView />
               ) : (
                 <TradesView timezone={clockTz} />
               )}

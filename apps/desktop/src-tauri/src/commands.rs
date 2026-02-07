@@ -1,5 +1,5 @@
 use crate::{config, db::DbState};
-use crate::models::{Rule, Settings, Trade, TradeInput, TradeWithRules};
+use crate::models::{DaySummary, Rule, Settings, Trade, TradeInput, TradeWithRules};
 
 use std::path::PathBuf;
 use tauri::Manager;
@@ -135,6 +135,22 @@ pub fn trades_update(state: tauri::State<'_, DbState>, req: TradeUpdateRequest) 
 pub fn trades_delete(state: tauri::State<'_, DbState>, id: String) -> Result<(), String> {
     state
         .with_conn(|conn| crate::trades::delete_trade(conn, &id))
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct JournalMonthSummaryRequest {
+    pub year: i32,
+    pub month: u32, // 1-12
+}
+
+#[tauri::command]
+pub fn journal_month_summary(state: tauri::State<'_, DbState>, req: JournalMonthSummaryRequest) -> Result<Vec<DaySummary>, String> {
+    state
+        .with_conn(|conn| {
+            let tz = crate::settings::get_timezone(conn)?;
+            crate::journal::month_summary(conn, &tz, req.year, req.month)
+        })
         .map_err(|e| e.to_string())
 }
 

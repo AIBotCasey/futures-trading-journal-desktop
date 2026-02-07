@@ -5,6 +5,7 @@ mod db_seed;
 mod models;
 mod settings;
 mod trades;
+mod journal;
 
 use crate::db::DbState;
 use tauri::Manager;
@@ -42,7 +43,8 @@ pub fn run() {
             commands::trades_get,
             commands::trades_create,
             commands::trades_update,
-            commands::trades_delete
+            commands::trades_delete,
+            commands::journal_month_summary
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
