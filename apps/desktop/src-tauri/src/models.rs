@@ -63,3 +63,13 @@ pub struct DaySummary {
     pub trade_count: i64,
     pub pnl_net_total: f64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TradeHighlight {
+    pub id: String,
+    pub symbol: String,
+    pub qty: f64,
+    pub pnl_net: f64,
+    pub notes: String,
+    pub exit_time_utc: i64,
+}

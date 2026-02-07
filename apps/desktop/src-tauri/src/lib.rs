@@ -44,7 +44,8 @@ pub fn run() {
             commands::trades_create,
             commands::trades_update,
             commands::trades_delete,
-            commands::journal_month_summary
+            commands::journal_month_summary,
+            commands::journal_day_trades
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

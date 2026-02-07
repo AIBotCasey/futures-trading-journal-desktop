@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Box, Button, Stack, Typography } from '@mui/material';
-import type { DaySummary } from './types';
-import { journalMonthSummary } from './api';
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  Typography,
+} from '@mui/material';
+import type { DaySummary, TradeHighlight } from './types';
+import { journalDayTrades, journalMonthSummary } from './api';
 
 function pad2(n: number) {
   return String(n).padStart(2, '0');
@@ -40,6 +50,11 @@ export default function JournalView() {
     for (const s of summary) m[s.date_local] = s;
     return m;
   }, [summary]);
+
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [dayTrades, setDayTrades] = useState<TradeHighlight[]>([]);
+  const [dayLoading, setDayLoading] = useState(false);
+  const [dayError, setDayError] = useState('');
 
   async function refresh() {
     setLoading(true);
@@ -92,6 +107,21 @@ export default function JournalView() {
   }
 
   const monthLabel = new Date(Date.UTC(year, month - 1, 1)).toLocaleString([], { month: 'long', year: 'numeric' });
+
+  async function openDay(date_local: string) {
+    setSelectedDay(date_local);
+    setDayTrades([]);
+    setDayError('');
+    setDayLoading(true);
+    try {
+      const t = await journalDayTrades(date_local);
+      setDayTrades(t);
+    } catch (e) {
+      setDayError(String(e));
+    } finally {
+      setDayLoading(false);
+    }
+  }
 
   return (
     <Box>
@@ -157,6 +187,9 @@ export default function JournalView() {
           return (
             <Box
               key={c.key}
+              onClick={() => openDay(key)}
+              role="button"
+              tabIndex={0}
               sx={{
                 minHeight: 78,
                 borderRadius: 2,
@@ -164,6 +197,8 @@ export default function JournalView() {
                 borderColor: 'divider',
                 bgcolor: bg,
                 p: 1,
+                cursor: 'pointer',
+                '&:hover': { filter: 'brightness(1.1)' },
               }}
             >
               <Typography variant="caption" sx={{ fontWeight: 900 }}>
@@ -189,6 +224,73 @@ export default function JournalView() {
           );
         })}
       </Box>
+
+      <Dialog open={!!selectedDay} onClose={() => setSelectedDay(null)} fullWidth maxWidth="sm">
+        <DialogTitle>{selectedDay ?? 'Day'}</DialogTitle>
+        <DialogContent>
+          {dayError ? <Alert severity="error" sx={{ mb: 2 }}>{dayError}</Alert> : null}
+          {dayLoading ? <Alert severity="info" sx={{ mb: 2 }}>Loading…</Alert> : null}
+
+          {!dayLoading && dayTrades.length === 0 ? (
+            <Alert severity="info">No trades for this day.</Alert>
+          ) : null}
+
+          <Stack spacing={1} sx={{ mt: 1 }}>
+            {dayTrades.map((t) => {
+              const color = t.pnl_net >= 0 ? '#22c55e' : '#ef4444';
+              const bg = t.pnl_net >= 0 ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)';
+              return (
+                <Box
+                  key={t.id}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'background.paper',
+                  }}
+                >
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                    <Typography sx={{ fontWeight: 900 }}>{t.symbol}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Qty {t.qty}
+                    </Typography>
+                    <Box sx={{ flex: 1 }} />
+                    <Box
+                      sx={{
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: color,
+                        bgcolor: bg,
+                        color,
+                        fontFamily: 'monospace',
+                        fontWeight: 900,
+                      }}
+                    >
+                      {money(t.pnl_net)}
+                    </Box>
+                  </Stack>
+
+                  {t.notes ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>
+                      {t.notes}
+                    </Typography>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      (No notes)
+                    </Typography>
+                  )}
+                </Box>
+              );
+            })}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedDay(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

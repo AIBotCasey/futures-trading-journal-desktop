@@ -65,3 +65,12 @@ export type DaySummary = {
   trade_count: number;
   pnl_net_total: number;
 };
+
+export type TradeHighlight = {
+  id: string;
+  symbol: string;
+  qty: number;
+  pnl_net: number;
+  notes: string;
+  exit_time_utc: number;
+};
