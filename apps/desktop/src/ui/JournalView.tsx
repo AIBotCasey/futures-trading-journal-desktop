@@ -115,7 +115,11 @@ export default function JournalView({
     }
   }
 
-  const monthLabel = new Date(Date.UTC(year, month - 1, 1)).toLocaleString([], { month: 'long', year: 'numeric' });
+  const monthLabel = new Date(Date.UTC(year, month - 1, 1)).toLocaleString([], {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 
   async function openDay(date_local: string) {
     setSelectedDay(date_local);
