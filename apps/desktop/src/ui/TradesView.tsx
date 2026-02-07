@@ -294,20 +294,33 @@ export default function TradesView({ timezone }: { timezone: string | null }) {
                 </Typography>
               </Box>
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  disabled
-                  sx={{
-                    opacity: 1,
-                    borderColor: t.pnl_net >= 0 ? '#22c55e' : '#ef4444',
-                    color: t.pnl_net >= 0 ? '#22c55e' : '#ef4444',
-                    fontFamily: 'monospace',
-                    fontWeight: 800,
-                  }}
-                >
-                  {money(t.pnl_net)}
-                </Button>
+                {(() => {
+                  const color = t.pnl_net >= 0 ? '#22c55e' : '#ef4444';
+                  const bg = t.pnl_net >= 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
+                  return (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      disabled
+                      sx={{
+                        borderColor: color,
+                        color,
+                        bgcolor: bg,
+                        opacity: 1,
+                        fontFamily: 'monospace',
+                        fontWeight: 800,
+                        '&.Mui-disabled': {
+                          borderColor: color,
+                          color,
+                          bgcolor: bg,
+                          opacity: 1,
+                        },
+                      }}
+                    >
+                      {money(t.pnl_net)}
+                    </Button>
+                  );
+                })()}
                 <Button variant="outlined" size="small" onClick={() => editTrade(t.id)} disabled={saving}>
                   Edit
                 </Button>
