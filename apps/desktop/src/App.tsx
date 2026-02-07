@@ -66,6 +66,29 @@ async function rulesDelete(id: string): Promise<void> {
   return invoke<void>('rules_delete', { id });
 }
 
+function StatusPill({ label, ok }: { label: string; ok: boolean }) {
+  const color = ok ? '#22c55e' : '#ef4444';
+  return (
+    <Button
+      variant="outlined"
+      size="small"
+      disabled
+      sx={{
+        borderColor: color,
+        color,
+        opacity: 1,
+        '&.Mui-disabled': {
+          borderColor: color,
+          color,
+          opacity: 1,
+        },
+      }}
+    >
+      {label}
+    </Button>
+  );
+}
+
 function getTimeZoneOptions(): string[] {
   // Best case: use the platform's supported IANA time zones.
   // supportedValuesOf is available in modern runtimes.
@@ -425,12 +448,17 @@ export default function App() {
           {error ? <Alert severity="error">{error}</Alert> : null}
 
           {status ? (
-            <Alert severity="info">
-              DB status — configured: {String(status.db.configured)}, encrypted: {String(status.db.encrypted)}, unlocked:{' '}
-              {String(status.db.unlocked)}
-            </Alert>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: { sm: 'center' } }}>
+              <StatusPill label={`Configured: ${status.db.configured ? 'true' : 'false'}`} ok={status.db.configured} />
+              <StatusPill label={`Encrypted: ${status.db.encrypted ? 'true' : 'false'}`} ok={status.db.encrypted} />
+              <StatusPill label={`Unlocked: ${status.db.unlocked ? 'true' : 'false'}`} ok={status.db.unlocked} />
+            </Stack>
           ) : (
-            <Alert severity="info">Loading status…</Alert>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Button variant="outlined" size="small" disabled sx={{ opacity: 1 }}>
+                Loading…
+              </Button>
+            </Stack>
           )}
 
           {!ready ? (
