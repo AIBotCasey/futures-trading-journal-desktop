@@ -22,49 +22,9 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-type DbStatus = {
-  configured: boolean;
-  encrypted: boolean;
-  unlocked: boolean;
-};
-
-type AppStatus = {
-  db: DbStatus;
-};
-
-type Settings = {
-  timezone: string;
-};
-
-type Rule = {
-  id: string;
-  label: string;
-  sort_order: number;
-};
-
-async function getStatus(): Promise<AppStatus> {
-  return invoke<AppStatus>('app_get_status');
-}
-
-async function settingsGet(): Promise<Settings> {
-  return invoke<Settings>('settings_get');
-}
-
-async function settingsUpdate(timezone: string): Promise<Settings> {
-  return invoke<Settings>('settings_update', { req: { timezone } });
-}
-
-async function rulesList(): Promise<Rule[]> {
-  return invoke<Rule[]>('rules_list');
-}
-
-async function rulesUpsert(rule: Rule): Promise<void> {
-  return invoke<void>('rules_upsert', { req: rule });
-}
-
-async function rulesDelete(id: string): Promise<void> {
-  return invoke<void>('rules_delete', { id });
-}
+import type { AppStatus, Rule, Settings } from './ui/types';
+import { appGetStatus as getStatus, rulesDelete, rulesList, rulesUpsert, settingsGet, settingsUpdate } from './ui/api';
+import TradesView from './ui/TradesView';
 
 function StatusPill({ label, ok }: { label: string; ok: boolean }) {
   const color = ok ? '#22c55e' : '#ef4444';
@@ -535,7 +495,7 @@ export default function App() {
               ) : tab === 'journal' ? (
                 <Alert severity="info">Journal UI coming next.</Alert>
               ) : (
-                <Alert severity="info">Trades UI coming next.</Alert>
+                <TradesView timezone={clockTz} />
               )}
             </>
           )}

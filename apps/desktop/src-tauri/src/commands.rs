@@ -1,5 +1,5 @@
 use crate::{config, db::DbState};
-use crate::models::{Rule, Settings};
+use crate::models::{Rule, Settings, Trade, TradeInput, TradeWithRules};
 
 use std::path::PathBuf;
 use tauri::Manager;
@@ -86,6 +86,55 @@ pub fn rules_delete(state: tauri::State<'_, DbState>, id: String) -> Result<(), 
             conn.execute("DELETE FROM rules WHERE id = ?1", rusqlite::params![id])?;
             Ok(())
         })
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct TradesListRequest {
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}
+
+#[tauri::command]
+pub fn trades_list(state: tauri::State<'_, DbState>, req: TradesListRequest) -> Result<Vec<Trade>, String> {
+    let limit = req.limit.unwrap_or(200);
+    let offset = req.offset.unwrap_or(0);
+    state
+        .with_conn(|conn| crate::trades::list_trades(conn, limit, offset))
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn trades_get(state: tauri::State<'_, DbState>, id: String) -> Result<TradeWithRules, String> {
+    state
+        .with_conn(|conn| crate::trades::get_trade_with_rules(conn, &id))
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn trades_create(state: tauri::State<'_, DbState>, input: TradeInput) -> Result<Trade, String> {
+    state
+        .with_conn(|conn| crate::trades::create_trade(conn, input))
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct TradeUpdateRequest {
+    pub id: String,
+    pub input: TradeInput,
+}
+
+#[tauri::command]
+pub fn trades_update(state: tauri::State<'_, DbState>, req: TradeUpdateRequest) -> Result<Trade, String> {
+    state
+        .with_conn(|conn| crate::trades::update_trade(conn, &req.id, req.input))
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn trades_delete(state: tauri::State<'_, DbState>, id: String) -> Result<(), String> {
+    state
+        .with_conn(|conn| crate::trades::delete_trade(conn, &id))
         .map_err(|e| e.to_string())
 }
 
