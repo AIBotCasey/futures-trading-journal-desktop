@@ -235,9 +235,7 @@ export default function TradesView({ timezone }: { timezone: string | null }) {
           <Typography variant="h5" sx={{ fontWeight: 800 }}>
             Trades
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Times display in {tz ?? 'local time'}.
-          </Typography>
+          {/* subtitle removed */}
         </Box>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={refresh} disabled={loading || saving}>
