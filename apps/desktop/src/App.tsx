@@ -24,9 +24,10 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import type { AppStatus, Rule, Settings } from './ui/types';
-import { appGetStatus as getStatus, backupExport, backupImport, rulesDelete, rulesList, rulesUpsert, settingsGet, settingsUpdate } from './ui/api';
+import { appGetStatus as getStatus, backupExport, backupImport, csvImportGeneric, rulesDelete, rulesList, rulesUpsert, settingsGet, settingsUpdate } from './ui/api';
 import TradesView from './ui/TradesView';
 import JournalView from './ui/JournalView';
+import ChangelogView from './ui/ChangelogView';
 
 function StatusPill({ label, ok }: { label: string; ok: boolean }) {
   const color = ok ? '#22c55e' : '#ef4444';
@@ -95,6 +96,8 @@ function ReadySection({
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importResult, setImportResult] = useState<string>('');
 
   useEffect(() => {
     void (async () => {
@@ -163,11 +166,12 @@ function ReadySection({
     }
   }
 
-  const disableActions = busy || saving || backupBusy;
+  const disableActions = busy || saving || backupBusy || importBusy;
 
   async function exportBackup() {
     setBackupBusy(true);
     setError('');
+    setImportResult('');
     try {
       const dest = await save({
         title: 'Export FTJournal database',
@@ -186,6 +190,7 @@ function ReadySection({
   async function importBackup() {
     setBackupBusy(true);
     setError('');
+    setImportResult('');
     try {
       const src = await open({
         title: 'Import FTJournal database',
@@ -194,6 +199,12 @@ function ReadySection({
       });
       const path = Array.isArray(src) ? src[0] : src;
       if (!path) return;
+
+      const ok = window.confirm(
+        'Import will replace your current local database file.\n\nIf you have not exported a backup first, you could lose data.\n\nContinue?'
+      );
+      if (!ok) return;
+
       const s = await backupImport(path);
       onStatusChanged(s);
     } catch (e) {
@@ -290,6 +301,67 @@ function ReadySection({
           Import backup
         </Button>
       </Stack>
+
+      <Divider sx={{ my: 3 }} />
+
+      <Typography variant="h5" sx={{ fontWeight: 800 }}>
+        CSV Import (generic)
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+        Import trades from a CSV with headers like: symbol, side, qty, entry_local, exit_local (or entry_time_utc_ms/exit_time_utc_ms), pnl_amount, fees, session, notes.
+      </Typography>
+
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
+        <Button
+          variant="contained"
+          onClick={async () => {
+            setImportBusy(true);
+            setError('');
+            setImportResult('');
+            try {
+              const src = await open({
+                title: 'Import trades CSV',
+                multiple: false,
+                directory: false,
+                filters: [{ name: 'CSV', extensions: ['csv'] }],
+              });
+              const path = Array.isArray(src) ? src[0] : src;
+              if (!path) return;
+
+              const res = await csvImportGeneric(path);
+              const msg = `Created: ${res.created} | Skipped: ${res.skipped} | Errors: ${res.errors.length}`;
+              setImportResult(msg + (res.errors.length ? `\n\n` + res.errors.slice(0, 10).join('\n') : ''));
+            } catch (e) {
+              setError(String(e));
+            } finally {
+              setImportBusy(false);
+            }
+          }}
+          disabled={disableActions}
+        >
+          Import CSV
+        </Button>
+        <Button
+          variant="outlined"
+          onClick={() => {
+            const sample = [
+              'symbol,side,qty,entry_local,exit_local,pnl_amount,fees,session,notes',
+              'ES,long,1,2026-02-07 09:35,2026-02-07 09:42,125.00,4.40,ny,Example trade',
+            ].join('\n');
+            navigator.clipboard?.writeText(sample).catch(() => undefined);
+            setImportResult('Copied sample CSV header + row to clipboard.');
+          }}
+          disabled={disableActions}
+        >
+          Copy sample CSV
+        </Button>
+      </Stack>
+
+      {importResult ? (
+        <Alert severity="info" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>
+          {importResult}
+        </Alert>
+      ) : null}
     </Box>
   );
 }
@@ -301,6 +373,7 @@ export default function App() {
 
   const [clockTz, setClockTz] = useState<string | null>(null);
   const [clockText, setClockText] = useState<string>(() => new Date().toLocaleTimeString());
+  const [clockDateText, setClockDateText] = useState<string>(() => new Date().toLocaleDateString());
 
   // init form
   const [initEncrypted, setInitEncrypted] = useState(true);
@@ -346,9 +419,17 @@ export default function App() {
           hour12: false,
           ...(clockTz ? { timeZone: clockTz } : {}),
         });
+        const d = now.toLocaleDateString([], {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          ...(clockTz ? { timeZone: clockTz } : {}),
+        });
         setClockText(txt);
+        setClockDateText(d);
       } catch {
         setClockText(new Date().toLocaleTimeString());
+        setClockDateText(new Date().toLocaleDateString());
       }
     }, 250);
     return () => window.clearInterval(id);
@@ -410,7 +491,7 @@ export default function App() {
     }
   }
 
-  const [tab, setTab] = useState<'trades' | 'journal' | 'settings'>('trades');
+  const [tab, setTab] = useState<'trades' | 'journal' | 'settings' | 'changelog'>('trades');
   const [pendingEditTradeId, setPendingEditTradeId] = useState<string | null>(null);
 
   return (
@@ -422,7 +503,7 @@ export default function App() {
           </Typography>
           <Box sx={{ flex: 1 }} />
           <Typography variant="body2" sx={{ fontFamily: 'monospace', mr: 1.5 }} color="text.secondary">
-            {clockText}
+            {clockDateText} {clockText}
           </Typography>
           {status ? (
             <Stack direction="row" spacing={1} sx={{ mr: 1.5, alignItems: 'center' }}>
@@ -463,6 +544,9 @@ export default function App() {
                 </Button>
                 <Button variant={tab === 'settings' ? 'contained' : 'text'} onClick={() => setTab('settings')}>
                   Settings
+                </Button>
+                <Button variant={tab === 'changelog' ? 'contained' : 'text'} onClick={() => setTab('changelog')}>
+                  Changelog
                 </Button>
               </Stack>
               <Divider />
@@ -553,6 +637,8 @@ export default function App() {
                   onTimezoneChanged={(tz) => setClockTz(tz)}
                   onStatusChanged={(s) => setStatus(s)}
                 />
+              ) : tab === 'changelog' ? (
+                <ChangelogView />
               ) : tab === 'journal' ? (
                 <JournalView
                   onEditTrade={(tradeId) => {

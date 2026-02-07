@@ -1,5 +1,6 @@
 use crate::{config, db::DbState};
 use crate::models::{DaySummary, JournalEntry, Rule, Settings, Trade, TradeHighlight, TradeInput, TradeWithRules};
+use crate::csv_import::CsvImportResult;
 
 use std::path::PathBuf;
 use tauri::Manager;
@@ -217,6 +218,22 @@ pub fn journal_entry_upsert(state: tauri::State<'_, DbState>, req: JournalEntryU
         .with_conn(|conn| {
             crate::journal_entries::upsert_daily_entry(conn, &req.date_local, &req.text)?;
             Ok(())
+        })
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct CsvImportGenericRequest {
+    pub path: String,
+}
+
+#[tauri::command]
+pub fn csv_import_generic(state: tauri::State<'_, DbState>, req: CsvImportGenericRequest) -> Result<CsvImportResult, String> {
+    state
+        .with_conn(|conn| {
+            let tz = crate::settings::get_timezone(conn)?;
+            let path = std::path::PathBuf::from(req.path);
+            crate::csv_import::import_generic_csv(conn, &path, &tz)
         })
         .map_err(|e| e.to_string())
 }

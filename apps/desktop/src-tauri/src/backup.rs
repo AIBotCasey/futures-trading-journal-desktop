@@ -24,9 +24,19 @@ pub fn export_db(app: &tauri::AppHandle, state: &DbState, dest_path: &Path) -> a
         std::fs::create_dir_all(parent).with_context(|| format!("create dir {}", parent.display()))?;
     }
 
+    // Copy main DB
     std::fs::copy(&src, dest_path).with_context(|| {
         format!("copy db from {} to {}", src.display(), dest_path.display())
     })?;
+
+    // Also copy WAL/SHM if present (WAL mode).
+    for suffix in ["-wal", "-shm"] {
+        let sidecar = PathBuf::from(format!("{}{}", src.to_string_lossy(), suffix));
+        if sidecar.exists() {
+            let dest_sidecar = PathBuf::from(format!("{}{}", dest_path.to_string_lossy(), suffix));
+            let _ = std::fs::copy(&sidecar, &dest_sidecar);
+        }
+    }
 
     // Re-open automatically if unencrypted.
     if !cfg.encrypted {
@@ -51,9 +61,23 @@ pub fn import_db(app: &tauri::AppHandle, state: &DbState, src_path: &Path) -> an
         std::fs::create_dir_all(parent).with_context(|| format!("create dir {}", parent.display()))?;
     }
 
+    // Replace main DB
     std::fs::copy(src_path, &dest).with_context(|| {
         format!("copy db from {} to {}", src_path.display(), dest.display())
     })?;
+
+    // Remove any existing WAL/SHM and import sidecars if present.
+    for suffix in ["-wal", "-shm"] {
+        let existing = PathBuf::from(format!("{}{}", dest.to_string_lossy(), suffix));
+        if existing.exists() {
+            let _ = std::fs::remove_file(&existing);
+        }
+        let sidecar = PathBuf::from(format!("{}{}", src_path.to_string_lossy(), suffix));
+        if sidecar.exists() {
+            let dest_sidecar = PathBuf::from(format!("{}{}", dest.to_string_lossy(), suffix));
+            let _ = std::fs::copy(&sidecar, &dest_sidecar);
+        }
+    }
 
     // Re-open automatically if unencrypted. Encrypted will require unlock.
     if !cfg.encrypted {

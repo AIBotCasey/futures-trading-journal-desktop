@@ -10,6 +10,19 @@ Local-first trading journal for **futures day traders**.
 ## Status
 Early development (v0.1 in progress).
 
+## Features (current)
+- **Trades**: Add/edit/delete completed trades
+- **Rules checklist**: Custom rules shown on every trade (track discipline)
+- **Journal**: Calendar month view with per-day journal entry
+- **Daily drill-down**: Click a day to see that day’s trades + notes
+- **Filters + quick stats**: Symbol/session/outcome/date filters + win/loss totals
+- **Local SQLite** with **optional encryption (SQLCipher)**
+- **Backup/restore**: Export/import database file (local-first)
+- **CSV import (generic)**: Import trades from a CSV (MVP)
+
+## Changelog
+See `CHANGELOG.md`.
+
 ## Privacy
 FTJournal does not require any network connection to operate. Imports and your journal database live on your machine.
 

@@ -8,6 +8,7 @@ mod trades;
 mod journal;
 mod backup;
 mod journal_entries;
+mod csv_import;
 
 use crate::db::DbState;
 use tauri::Manager;
@@ -52,7 +53,8 @@ pub fn run() {
             commands::backup_export,
             commands::backup_import,
             commands::journal_entry_get,
-            commands::journal_entry_upsert
+            commands::journal_entry_upsert,
+            commands::csv_import_generic
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

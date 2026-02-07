@@ -79,3 +79,9 @@ export type JournalEntry = {
   date_local: string;
   text: string;
 };
+
+export type CsvImportResult = {
+  created: number;
+  skipped: number;
+  errors: string[];
+};
