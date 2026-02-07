@@ -21,17 +21,15 @@ Early development (v0.1 in progress).
 - **CSV import (generic MVP)**: Import trades from a CSV
 
 ## Screenshots
-_(Coming next)_
 
-If you want to add screenshots:
-- Save PNGs into `docs/screenshots/`
-- Update this section to embed them, e.g.
-
-```md
+### Trades
 ![Trades](docs/screenshots/trades.png)
+
+### Journal
 ![Journal](docs/screenshots/journal.png)
+
+### Settings
 ![Settings](docs/screenshots/settings.png)
-```
 
 ## Notes on unsigned builds
 FTJournal releases are **not code-signed/notarized**.
