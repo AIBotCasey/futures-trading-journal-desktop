@@ -221,26 +221,34 @@ export default function JournalView({
                 <Typography variant="caption" sx={{ fontWeight: 900 }}>
                   {c.day}
                 </Typography>
-                {hasTrades ? (
-                  <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-                    ({count})
-                  </Typography>
-                ) : null}
                 <Box sx={{ flex: 1 }} />
               </Stack>
 
-              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box
+                sx={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                }}
+              >
                 {hasTrades ? (
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontFamily: 'monospace',
-                      fontWeight: 900,
-                      color,
-                    }}
-                  >
-                    {money(pnl)}
-                  </Typography>
+                  <Stack spacing={0.25} sx={{ alignItems: 'center' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontFamily: 'monospace',
+                        fontWeight: 900,
+                        color,
+                      }}
+                    >
+                      {money(pnl)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                      Trades: {count}
+                    </Typography>
+                  </Stack>
                 ) : (
                   <Typography variant="caption" sx={{ color }}>
                     No trades
